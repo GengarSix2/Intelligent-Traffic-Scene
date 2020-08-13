@@ -123,7 +123,7 @@ class Frame():
 
 
 	def Traffic_Light_Recognition(self, img_rgb):
-		cv2.imshow("1", img_rgb)
+		#cv2.imshow("1", img_rgb)
 		img_hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV)
 		H = img_hsv[:, :, 0]
 		H = np.squeeze(np.reshape(H, (1, -1)))
@@ -204,7 +204,7 @@ class Frame():
 
 		count_text = ""
 		count_text += "实时行人数目：{}\n".format(count_obj['person'])
-		count_text += "实时车辆数目：{}\n".format(count_obj['car'])
+		count_text += "实时汽车数目：{}\n".format(count_obj['car'])
 		count_text += "实时摩托车数目：{}\n".format(count_obj['motorbike'])
 		count_text += "路段车流量统计：{}\n".format(self.traffic_sta)
 
@@ -218,33 +218,25 @@ class Frame():
 		return imagex
 
 
+	def Write_Excel(self, worksheet, count_obj):
+		row = self.num_frame+1
+		# 帧数列
+		worksheet.write(row, 0, self.num_frame+1)
+		# 行人数目列
+		worksheet.write(row, 2, count_obj['person'])
+		# 汽车数目列
+		worksheet.write(row, 4, count_obj['car'])
+		# 摩托车数目列
+		worksheet.write(row, 6, count_obj['motorbike'])
+		# 车流量统计列
+		worksheet.write(row, 8, self.traffic_sta)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		if self.IfLicensePlateRecognition:
+			license_text = ""
+			for license in self.license_plate:
+				license_text += (license+',')
+			license_text = license_text[0:len(license_text)-1]
+			worksheet.write(row, 12, license_text)
 
 
 

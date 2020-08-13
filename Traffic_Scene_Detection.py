@@ -1,5 +1,6 @@
 import cv2
 import time
+import xlsxwriter
 import tensorflow as tf
 from utils import Frame
 from yolov3_tf2.models import YoloV3
@@ -13,16 +14,30 @@ class VideoProcessing():
 		self.flags['weights'] = './yolo_v3/checkpoints/yolov3.tf'
 		self.flags['tiny'] = False
 		self.flags['size'] = 416
-		self.flags['video'] = 'Image&Video/1080p-video.mp4'
-		self.flags['output'] = 'Image&Video/0806.avi'
+		self.flags['video'] = 'Image&Video/video-01.avi'
+		self.flags['output'] = 'Image&Video/0813.avi'
 		self.flags['output_format'] = 'XVID'
 		self.flags['num_classes'] = 80
 
 		# 功能选项
-		self.License_Plate_Recognition = True
+		self.License_Plate_Recognition = False
 		self.Traffic_Light_Recognition = True
 		self.Estimate_Speed = True
 
+		# 将识别结果保存在Excel中
+		self.workbook = xlsxwriter.Workbook('Recognize_Result.xlsx')  # 建立文件
+		self.worksheet = self.workbook.add_worksheet()  # 建立sheet
+
+
+	def Create_Excel(self):
+		self.worksheet.write('A1', '帧数')  # 向A1写入
+		self.worksheet.write('C1', '实时行人数目')
+		self.worksheet.write('E1', '实时汽车数目')
+		self.worksheet.write('G1', '实时摩托车数目')
+		self.worksheet.write('I1', '路段车流量统计')
+
+		if self.License_Plate_Recognition:
+			self.worksheet.write('M1', '车牌检测结果')
 
 	def Run(self):
 		physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -50,6 +65,7 @@ class VideoProcessing():
 		num_frame = 0
 		traffic_sta = 0
 		writer = None
+		self.Create_Excel()
 		while True:
 			_, img = vid.read()
 
@@ -92,6 +108,7 @@ class VideoProcessing():
 			img = frame.Draw_Outputs() # 标注识别框和标签
 			count_obj = frame.Count_Obj() # 统计当前帧画面中的检测目标个数
 			img = frame.Draw_Obj(img, count_obj) # 标注当前帧检测结果
+			frame.Write_Excel(self.worksheet, count_obj)
 
 			num_frame += 1
 			if writer is not None: # 也可以保存结果
@@ -100,6 +117,7 @@ class VideoProcessing():
 			if cv2.waitKey(1) == ord('q'): # 按q键退出
 				break
 
+		self.workbook.close()
 		if writer is not None:
 			writer.release()
 		cv2.destroyAllWindows()
