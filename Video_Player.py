@@ -5,7 +5,6 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import *
 from Traffic_Scene_Detection import VideoProcessing
 import qtawesome as qta
-import datetime
 import os
 
 
@@ -72,7 +71,7 @@ class VideoPlayer(QWidget):
 
 
         # 创建选择框
-        self.cb_1 = QCheckBox("识别行人违规行为")
+        self.cb_1 = QCheckBox("识别红绿灯")
         self.cb_1.setFont(QFont("黑体", 12))
         self.cb_1.setChecked(True)
 
@@ -132,10 +131,11 @@ class VideoPlayer(QWidget):
 
         if fileName != '':
             self.statusBar.showMessage("视频处理中，请耐心等待。")
-            today = datetime.date.today().strftime("%y%m%d")
             video = VideoProcessing()
             video.flags["video"] = fileName
-            video.flags["output"] = "./Image&Video/" + today + "-result.avi"
+            output_name = os.path.basename(fileName)
+            output_name = output_name.split('.')[0]
+            video.flags["output"] = "./Image&Video/" + str(output_name) + "-result.avi"
             video.Traffic_Light_Recognition = self.cb_1.isChecked()
             video.License_Plate_Recognition = self.cb_2.isChecked()
             video.Estimate_Speed = self.cb_3.isChecked()
