@@ -3,15 +3,16 @@ from PIL import Image
 from PIL import ImageDraw
 import HyperLPRLite as pr
 import cv2
-import numpy as np
 import dlib
-import time
 import math
+import datetime
+import numpy as np
 
 
 
 class Frame():
-	def __init__(self, img, outputs, class_names, num_frame, trackers, labels, confidence, traffic_sta, license_plate):
+	def __init__(self, img, outputs, class_names, num_frame, trackers, labels, confidence, traffic_sta,
+	             license_plate, fps, IfLicensePlate, IfTrafficLight, IfEstimateSpeed):
 		self.trackers = trackers # 当前帧识别目标的坐标（左上角、右下角）
 		self.labels = labels # position对应目标的标签
 		self.confidence = confidence # 当前帧识别目标的置信度
@@ -19,11 +20,12 @@ class Frame():
 		self.init_image = img # 当前帧原始图像
 		self.traffic_sta = traffic_sta # 车流量统计
 		self.license_plate = license_plate
+		self.fps = fps
 
 		# 功能选项
-		self.IfLicensePlateRecognition = False
-		self.IfTrafficLightRecognition = True
-		self.IfEstimateSpeed = True
+		self.IfLicensePlateRecognition = IfLicensePlate
+		self.IfTrafficLightRecognition = IfTrafficLight
+		self.IfEstimateSpeed = IfEstimateSpeed
 
 		if self.num_frame%10 == 0:
 			self.trackers = []
@@ -53,7 +55,7 @@ class Frame():
 						self.confidence.append(objectness[i])
 
 		else:
-			for i in range(len(self.trackers)): # 更新追踪器的同时统计流量数据
+			for i in range(len(self.trackers)): # 更新追踪器的同时统计流量数据、计算车速
 				t = self.trackers[i]
 				l = self.labels[i]
 				if l=='car' or l=='motorbike':
@@ -66,6 +68,10 @@ class Frame():
 					startY_cur = pos_cur.top()
 					if (startY_pre <= 350 and startY_cur > 350) or (startY_pre >= 350 and startY_cur < 350):
 						self.traffic_sta += 1
+
+					if l=='car' and self.IfEstimateSpeed:
+						speed = int(self.Estimate_Speed(pos_pre, pos_cur, 30, self.fps))
+						self.labels[i] += " {}km/h".format(speed)
 				else:
 					t.update(self.init_image)
 
@@ -76,12 +82,6 @@ class Frame():
 
 	def Get_Traffic_Sta(self):
 		return self.traffic_sta
-
-
-	def Set_Function(self, IfLicensePlateRecognition, IfTrafficLightRecognition, IfEstimateSpeed):
-		self.IfLicensePlateRecognition = IfLicensePlateRecognition
-		self.IfTrafficLightRecognition = IfTrafficLightRecognition
-		self.IfEstimateSpeed = IfEstimateSpeed
 
 
 	def Count_Obj(self): # 统计当前帧画面中的检测目标个数
@@ -145,6 +145,20 @@ class Frame():
 			color = "Unkonwn"
 
 		return color
+
+
+	def Estimate_Speed(self, pos_pre, pos_cur, mySpeed, fps):
+		location1 = [int(pos_pre.left()), int(pos_pre.top()), int(pos_pre.right()) - int(pos_pre.left()),
+					                int(pos_pre.bottom()) - int(pos_pre.top())]
+		location2 = [int(pos_cur.left()), int(pos_cur.top()), int(pos_cur.right()) - int(pos_cur.left()),
+					                int(pos_cur.bottom()) - int(pos_cur.top())]
+
+		carWidth = 1.85
+		d_pixels = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
+		ppm = location2[2] / carWidth
+		d_meters = d_pixels / ppm
+		speed = mySpeed + d_meters * fps
+		return speed
 
 
 	def Draw_Outputs(self):
@@ -241,5 +255,33 @@ class Frame():
 
 
 
+class FPS:
+	def __init__(self):
+		# store the start time, end time, and total number of frames
+	    # that were examined between the start and end intervals
+		self._start = None
+		self._end = None
+		self._numFrames = 0
 
+	def start(self):
+		# start the timer
+		self._start = datetime.datetime.now()
+		return self
 
+	def stop(self):
+		# stop the timer
+	    self._end = datetime.datetime.now()
+
+	def update(self):
+		# increment the total number of frames examined during the
+	    # start and end intervals
+	    self._numFrames += 1
+
+	def elapsed(self):
+		# return the total number of seconds between the start and
+	    # end interval
+	    return (self._end - self._start).total_seconds()
+
+	def fps(self):
+		# compute the (approximate) frames per second
+	    return self._numFrames / self.elapsed()
