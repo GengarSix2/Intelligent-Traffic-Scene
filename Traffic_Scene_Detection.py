@@ -2,7 +2,7 @@ import cv2
 import time
 import xlsxwriter
 import tensorflow as tf
-from utils import Frame, FPS
+from utils import Frame
 from yolov3_tf2.models import YoloV3
 from yolov3_tf2.dataset import transform_images
 from absl import logging
@@ -14,8 +14,8 @@ class VideoProcessing():
 		self.flags['weights'] = './yolov3_tf2/yolo_v3_model/checkpoints/yolov3.tf'
 		self.flags['tiny'] = False
 		self.flags['size'] = 416
-		self.flags['video'] = 'Image&Video/1080p-video.mp4'
-		self.flags['output'] = 'Image&Video/0813.avi'
+		self.flags['video'] = 'Image&Video/SmallIntersection.mp4'
+		self.flags['output'] = 'Image&Video/0819.avi'
 		self.flags['output_format'] = 'XVID'
 		self.flags['num_classes'] = 80
 
@@ -52,7 +52,6 @@ class VideoProcessing():
 		class_names = [c.strip() for c in open(self.flags['classes']).readlines()]
 		logging.info('classes loaded')
 
-		times = []
 
 		try:
 			vid = cv2.VideoCapture(int(self.flags['video']))
@@ -66,7 +65,6 @@ class VideoProcessing():
 		traffic_sta = 0
 		writer = None
 		self.Create_Excel()
-		fps = 0
 		begin_time = time.time()
 		while True:
 			_, img = vid.read()
@@ -91,21 +89,18 @@ class VideoProcessing():
 				writer = cv2.VideoWriter(self.flags["output"], fourcc, 30,
 				                         (img.shape[1], img.shape[0]), True)
 
-			t1 = time.time()
+			# 使用YOLOv3进行目标检测
 			boxes, scores, classes, nums = yolo.predict(img_in)
-			t2 = time.time()
-			times.append(t2 - t1)
-			times = times[-20:]
 
 			# 创建Frame对象 便于处理当前帧
 			if num_frame%10 == 0:
 				frame = Frame(img, (boxes, scores, classes, nums), class_names, num_frame,
-				              [], [], [], traffic_sta, [], fps, self.License_Plate_Recognition, self.Traffic_Light_Recognition,
+				              [], [], [], traffic_sta, [], 30, self.License_Plate_Recognition, self.Traffic_Light_Recognition,
 				              self.Estimate_Speed)
 			else:
 				trackers, labels, confidence, license_plate = frame.Get_Track_Obj()
 				frame = Frame(img, (boxes, scores, classes, nums), class_names, num_frame,
-				              trackers, labels, confidence, traffic_sta, license_plate, fps, self.License_Plate_Recognition,
+				              trackers, labels, confidence, traffic_sta, license_plate, 30, self.License_Plate_Recognition,
 				              self.Traffic_Light_Recognition, self.Estimate_Speed)
 
 
@@ -119,7 +114,6 @@ class VideoProcessing():
 			num_frame += 1
 			end_time = time.time()
 			run_time = end_time-begin_time
-			fps = num_frame/run_time
 			if writer is not None: # 也可以保存结果
 				writer.write(img)
 			cv2.imshow('output', img)

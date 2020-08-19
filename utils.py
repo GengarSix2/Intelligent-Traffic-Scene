@@ -58,20 +58,28 @@ class Frame():
 			for i in range(len(self.trackers)): # 更新追踪器的同时统计流量数据、计算车速
 				t = self.trackers[i]
 				l = self.labels[i]
-				if l=='car' or l=='motorbike':
+				if l[0:3]=='car' or l=='motorbike':
 					pos_pre = t.get_position()
 					t.update(self.init_image)
 					pos_cur = t.get_position()
 
 					# 获取追踪目标前一帧和后一帧的Y轴坐标
+					startX_pre = pos_pre.left()
+					startX_cur = pos_cur.left()
 					startY_pre = pos_pre.top()
 					startY_cur = pos_cur.top()
 					if (startY_pre <= 350 and startY_cur > 350) or (startY_pre >= 350 and startY_cur < 350):
 						self.traffic_sta += 1
+					elif (startX_pre <= 600 and startX_cur > 600) or (startX_pre >= 600 and startX_cur < 600):
+						self.traffic_sta += 1
 
-					if l=='car' and self.IfEstimateSpeed:
-						speed = int(self.Estimate_Speed(pos_pre, pos_cur, 30, self.fps))
+					if l[0:3]=='car' and self.IfEstimateSpeed:
+						self.labels[i] = 'car'
+						speed = int(self.Estimate_Speed(pos_pre, pos_cur))
 						self.labels[i] += " {}km/h".format(speed)
+
+
+
 				else:
 					t.update(self.init_image)
 
@@ -92,7 +100,7 @@ class Frame():
 		obj_num = len(self.labels)  # 识别出的物体数量
 
 		for i in range(obj_num):
-			if self.labels[i] == 'car':
+			if self.labels[i][0:3] == 'car':
 				count_car += 1
 			elif self.labels[i] == 'motorbike':
 				count_motorbike += 1
@@ -147,17 +155,24 @@ class Frame():
 		return color
 
 
-	def Estimate_Speed(self, pos_pre, pos_cur, mySpeed, fps):
+	def Estimate_Speed(self, pos_pre, pos_cur, fps=60, my_speed=0):
+		# location = [StartX, StartY, Width, Height]
 		location1 = [int(pos_pre.left()), int(pos_pre.top()), int(pos_pre.right()) - int(pos_pre.left()),
-					                int(pos_pre.bottom()) - int(pos_pre.top())]
+		             int(pos_pre.bottom()) - int(pos_pre.top())]
 		location2 = [int(pos_cur.left()), int(pos_cur.top()), int(pos_cur.right()) - int(pos_cur.left()),
-					                int(pos_cur.bottom()) - int(pos_cur.top())]
+		             int(pos_cur.bottom()) - int(pos_cur.top())]
+		# center是前后标注框的中心点坐标 [X, Y]
+		center_1 = [location1[0] + (location1[2]) / 2, location1[1] + (location1[3]) / 2]
+		center_2 = [location2[0] + (location2[2]) / 2, location2[1] + (location2[3]) / 2]
 
-		carWidth = 1.85
-		d_pixels = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
-		ppm = location2[2] / carWidth
+		# 计算标注框中心移动的像素距离
+		d_pixels = math.sqrt(math.pow(center_2[0] - center_1[0], 2) + math.pow(center_2[1] - center_1[1], 2))
+		ppm = 150/1.7
 		d_meters = d_pixels / ppm
-		speed = mySpeed + d_meters * fps
+		speed = (my_speed + d_meters * fps) * 3.6
+
+		if speed <= 3:
+			speed = 0
 		return speed
 
 
@@ -175,7 +190,7 @@ class Frame():
 				self.labels[i] = 'car'
 
 			if self.labels[i] == 'car':
-				if self.IfLicensePlateRecognition and self.num_frame%20==0: # 识别车牌
+				if self.IfLicensePlateRecognition and self.num_frame%30==0: # 识别车牌
 					startX, endX = x1y1[0], x2y2[0]
 					startY, endY = x1y1[1], x2y2[1]
 					text = self.License_plate_recognition(self.init_image[startY:endY, startX:endX])
@@ -254,34 +269,3 @@ class Frame():
 
 
 
-
-class FPS:
-	def __init__(self):
-		# store the start time, end time, and total number of frames
-	    # that were examined between the start and end intervals
-		self._start = None
-		self._end = None
-		self._numFrames = 0
-
-	def start(self):
-		# start the timer
-		self._start = datetime.datetime.now()
-		return self
-
-	def stop(self):
-		# stop the timer
-	    self._end = datetime.datetime.now()
-
-	def update(self):
-		# increment the total number of frames examined during the
-	    # start and end intervals
-	    self._numFrames += 1
-
-	def elapsed(self):
-		# return the total number of seconds between the start and
-	    # end interval
-	    return (self._end - self._start).total_seconds()
-
-	def fps(self):
-		# compute the (approximate) frames per second
-	    return self._numFrames / self.elapsed()
