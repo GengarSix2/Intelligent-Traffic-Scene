@@ -14,15 +14,16 @@ class VideoProcessing():
 		self.flags['weights'] = './yolov3_tf2/yolo_v3_model/checkpoints/yolov3.tf'
 		self.flags['tiny'] = False
 		self.flags['size'] = 416
-		self.flags['video'] = 'Image&Video/SmallIntersection.mp4'
-		self.flags['output'] = 'Image&Video/0819.avi'
+		self.flags['video'] = 'Image&Video/LargeIntersection.mp4'
+		self.flags['output'] = 'Image&Video/0826.avi'
 		self.flags['output_format'] = 'XVID'
 		self.flags['num_classes'] = 80
 
 		# 功能选项
-		self.License_Plate_Recognition = False
 		self.Traffic_Light_Recognition = True
 		self.Estimate_Speed = True
+		self.License_Plate_Recognition = False
+
 
 		# 将识别结果保存在Excel中
 		self.workbook = xlsxwriter.Workbook('Recognize_Result.xlsx')  # 建立文件
@@ -30,8 +31,8 @@ class VideoProcessing():
 
 
 	def Create_Excel(self):
-		self.worksheet.write('A1', '帧数')  # 向A1写入
-		self.worksheet.write('C1', '实时行人数目')
+		self.worksheet.write('A1', '帧数')  # 向A1写入-
+		self.worksheet.write('C1', '实时路人数目')
 		self.worksheet.write('E1', '实时汽车数目')
 		self.worksheet.write('G1', '实时摩托车数目')
 		self.worksheet.write('I1', '路段车流量统计')
@@ -112,15 +113,15 @@ class VideoProcessing():
 
 
 			num_frame += 1
-			end_time = time.time()
-			run_time = end_time-begin_time
 			if writer is not None: # 也可以保存结果
 				writer.write(img)
-			cv2.imshow('output', img)
+			cv2.imshow('output', img) # 显示当前帧处理结果
 			if cv2.waitKey(1) == ord('q'): # 按q键退出
 				break
 
-
+		end_time = time.time()
+		run_time = end_time - begin_time
+		print("处理时间：{}".format(run_time))
 
 		self.workbook.close()
 		if writer is not None:

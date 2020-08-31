@@ -75,13 +75,15 @@ class VideoPlayer(QWidget):
         self.cb_1.setFont(QFont("黑体", 12))
         self.cb_1.setChecked(True)
 
-        self.cb_2 = QCheckBox("识别车牌")
+        self.cb_2 = QCheckBox("检测车速")
         self.cb_2.setFont(QFont("黑体", 12))
-        self.cb_2.setChecked(False)
+        self.cb_2.setChecked(True)
 
-        self.cb_3 = QCheckBox("检测车速")
+        self.cb_3 = QCheckBox("识别车牌")
         self.cb_3.setFont(QFont("黑体", 12))
         self.cb_3.setChecked(False)
+
+
 
         # 创建状态控件
         self.statusBar = QStatusBar()
@@ -136,9 +138,11 @@ class VideoPlayer(QWidget):
             output_name = os.path.basename(fileName)
             output_name = output_name.split('.')[0]
             video.flags["output"] = "./Image&Video/" + str(output_name) + "-result.avi"
+
             video.Traffic_Light_Recognition = self.cb_1.isChecked()
-            video.License_Plate_Recognition = self.cb_2.isChecked()
-            video.Estimate_Speed = self.cb_3.isChecked()
+            video.Estimate_Speed = self.cb_2.isChecked()
+            video.License_Plate_Recognition = self.cb_3.isChecked()
+
             video.Run()
             res_path = os.getcwd().replace('\\','/')+video.flags["output"]
             self.statusBar.showMessage("结果已存放于: {}".format(res_path))

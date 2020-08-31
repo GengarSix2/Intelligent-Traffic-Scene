@@ -232,7 +232,7 @@ class Frame():
 		draw = ImageDraw.Draw(img)
 
 		count_text = ""
-		count_text += "实时行人数目：{}\n".format(count_obj['person'])
+		count_text += "实时路人数目：{}\n".format(count_obj['person'])
 		count_text += "实时汽车数目：{}\n".format(count_obj['car'])
 		count_text += "实时摩托车数目：{}\n".format(count_obj['motorbike'])
 		count_text += "路段车流量统计：{}\n".format(self.traffic_sta)
@@ -251,7 +251,7 @@ class Frame():
 		row = self.num_frame+1
 		# 帧数列
 		worksheet.write(row, 0, self.num_frame+1)
-		# 行人数目列
+		# 路人数目列
 		worksheet.write(row, 2, count_obj['person'])
 		# 汽车数目列
 		worksheet.write(row, 4, count_obj['car'])
